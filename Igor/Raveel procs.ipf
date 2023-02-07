@@ -84,10 +84,11 @@ end
 
 //Function to get initial paramaters
 
-function /wave get_initial_params(sweep)
+function /wave get_initial_params(sweep, x_array)
 
 // for a given sweep returns a guess of initial parameters for the fit function: Charge transiton
 	wave sweep //have to declare function parameters first
+	wave x_array
 //	
 //	
 //	
@@ -95,10 +96,12 @@ function /wave get_initial_params(sweep)
 	variable const = mean(sweep)
 	variable theta = 5
 	
-	duplicate /o sweep sweepcopy
-	differentiate sweepcopy
-    extract/INDX sweepcopy, extractedwave, sweepcopy == wavemin(sweepcopy)
-    variable mid = extractedwave[0]
+	duplicate /o sweep sweepsmooth
+	Smooth/S=4 101, sweepsmooth ;DelayUpdate
+	
+	differentiate sweepsmooth
+    extract/INDX sweepsmooth, extractedwave, sweepsmooth == wavemin(sweepsmooth)
+    variable mid = x_array[extractedwave[0]]
 
 	
 	//smoothing and differentiating //could be useful for amp guess and linear term guess
@@ -112,7 +115,7 @@ function /wave get_initial_params(sweep)
 	Make /D/N=5/O W_coef
 	W_coef[0] = {amp,const,theta,mid,lin}
 	
-	killwaves extractedwave, sweepcopy
+	killwaves extractedwave, sweepsmooth
 	return W_coef
 
 end
@@ -137,9 +140,14 @@ function /wave fit_transition(current_array,x_array)
 	//Make/D/N=5/O W_coef
 	//W_coef = get_initial_params(sweep)
 	
-	get_initial_params(current_array)
+	get_initial_params(current_array, x_array)
 	
-	FuncFit Chargetransition W_coef current_array[][0] /X= x_array /D 
+	//smoothing and differentiating //could be useful for amp guess and linear term guess
+	Duplicate/O current_array, smooth_current;DelayUpdate
+	Smooth/S=4 401, smooth_current;DelayUpdate
+	
+	
+	FuncFit Chargetransition W_coef smooth_current[][0] /X= x_array /D 
 	
 	//return W_coef
 end
@@ -184,8 +192,8 @@ function /wave get_fit_params(int wavenum, string dataset)
 		
 	  temp_wave = wavenm[i][p]
       fit_transition(temp_wave, $w2x)
-      fit_params[2 * i] = W_coef[q]
-      fit_params[(2 * i) + 1] = W_sigma[q] 
+      fit_params[1 * i] = W_coef[q]
+      fit_params[(nr/2) + i] = W_sigma[q] 
 //		
 	endfor
 	
@@ -198,8 +206,11 @@ end
 function plot_thetas(int wavenum, string dataset)
 	
 	wave fit_params
+	int nr
 	get_fit_params(wavenum, dataset)
-	display fit_params[][2]
+	nr = dimsize(fit_params,0)
+	
+	display fit_params[0,nr/2 - 1][2]
 	
 	ModifyGraph fSize=24
     ModifyGraph gFont="Gill Sans Light"
@@ -207,7 +218,7 @@ function plot_thetas(int wavenum, string dataset)
     ModifyGraph mode=3,rgb=(0,0,0,32768)
     
     Label bottom "repeat"
-    Label left ""
+    Label left "theta values"
     
     
     
