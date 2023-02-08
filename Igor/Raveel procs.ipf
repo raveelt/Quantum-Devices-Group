@@ -144,7 +144,7 @@ function /wave fit_transition(current_array,x_array)
 	
 	//smoothing and differentiating //could be useful for amp guess and linear term guess
 	Duplicate/O current_array, smooth_current;DelayUpdate
-	Smooth/S=4 401, smooth_current;DelayUpdate
+	Smooth/S=4 201, smooth_current;DelayUpdate
 	
 	
 	FuncFit Chargetransition W_coef smooth_current[][0] /X= x_array /D 
@@ -225,6 +225,14 @@ function plot_thetas(int wavenum, string dataset)
 	
 end
 	
+	
+function full_procedure(int wavenum, string dataset)
+
+	avg_raveel(wavenum, dataset)
+	plot_thetas(wavenum, dataset)
+	plot2d_raveel(wavenum,dataset)
+
+end
 
 
 // plotted thetas from fitting each sweep = good and bad for each line
