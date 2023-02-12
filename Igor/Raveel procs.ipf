@@ -34,7 +34,7 @@ function /wave avg_raveel(int wavenum, string dataset) // /WAVE lets your return
 		avgcurrent += wavenm[i][p] //sums all the rows
 	endfor
 	
-	avgcurrent = avgcurrent / nr
+	avgcurrent = avgcurrent / nr // divide by total rows
 	
 	display avgcurrent[][0] vs $w2x
 	Label bottom "voltage"
@@ -203,19 +203,99 @@ end
 	
 	
 
+//function plot_thetas(int wavenum, string dataset)
+//	
+//	wave fit_params
+//	int nr
+//	get_fit_params(wavenum, dataset)
+//	nr = dimsize(fit_params,0)
+//	
+//	display fit_params[0,nr/2 - 1][2]
+//	
+//	ModifyGraph fSize=24
+//    ModifyGraph gFont="Gill Sans Light"
+//    ModifyGraph width={Aspect,1.62},height=300
+//    ModifyGraph mode=3,rgb=(0,0,0,32768)
+//    
+//    Label bottom "repeat"
+//    Label left "theta values"
+//    
+//    
+//    
+//	
+//end
+
+
 function plot_thetas(int wavenum, string dataset)
 	
 	wave fit_params
+	variable thetamean
+	variable thetastd
+	variable i
 	int nr
+	
 	get_fit_params(wavenum, dataset)
 	nr = dimsize(fit_params,0)
+	nr = nr/2-1               //only the first half are associated with theta values,
+	                          //the second have are the uncertainties 
+	 
+	duplicate /O/R =[0,nr][2] fit_params thetas
 	
-	display fit_params[0,nr/2 - 1][2]
+	thetamean = mean(thetas)
+	thetastd = sqrt(variance(thetas))
+	
+	make /o/n =(nr) meanwave
+	make /o/n =(nr) stdwave
+	make /o/n =(nr) stdwave2
+	make /o/n = 0 goodthetas
+	make /o/n = 0 goodthetasx
+	make /o/n = 0 badthetas
+	make /o/n = 0 badthetasx
+	
+	
+	meanwave = thetamean
+	stdwave = thetamean - 2 * thetastd
+	stdwave2 = thetamean + 2 * thetastd
+	
+	
+	//display thetas, meanwave, stdwave, stdwave2
+	
+	
+	for (i=0; i < nr ; i+=1)
+		
+		if (abs(thetas[i] - thetamean) < (2 * thetastd))
+			
+			insertPoints /v = (thetas[i]) nr, 1, goodthetas
+			insertpoints /v = (i) nr, 1, goodthetasx
+			
+		else
+		
+			insertPoints /v = (thetas[i]) nr, 1, badthetas
+			insertpoints /v = (i) nr, 1, badthetasx
+			
+		endif
+		
+	endfor
+			
+		
+	
+	
+	display meanwave, stdwave, stdwave2
+	appendtograph goodthetas vs goodthetasx
+	appendtograph badthetas vs badthetasx	
+	
 	
 	ModifyGraph fSize=24
     ModifyGraph gFont="Gill Sans Light"
     ModifyGraph width={Aspect,1.62},height=300
-    ModifyGraph mode=3,rgb=(0,0,0,32768)
+    ModifyGraph lstyle(meanwave)=3,rgb(meanwave)=(17476,17476,17476)
+    ModifyGraph lstyle(stdwave)=3,rgb(stdwave)=(30583,30583,30583)
+    ModifyGraph lstyle(stdwave2)=3,rgb(stdwave2)=(30583,30583,30583)
+    ModifyGraph mode(goodthetas)=3,lsize(goodthetas)=2
+    ModifyGraph mode(badthetas)=3,rgb(badthetas)=(29524,1,58982)
+
+    
+    
     
     Label bottom "repeat"
     Label left "theta values"
@@ -224,6 +304,7 @@ function plot_thetas(int wavenum, string dataset)
     
 	
 end
+
 	
 	
 function full_procedure(int wavenum, string dataset)
@@ -262,3 +343,7 @@ end
 
 //Savitsky golay smoothing exists in Igor
 	//https://www.wavemetrics.com/products/igorpro/dataanalysis/signalprocessing/smoothing
+	
+	
+	
+	//duplicate /O/R = fit_params[0,nr/2 - 1][2] fit_params, wave2
