@@ -305,15 +305,71 @@ function plot_thetas(int wavenum, string dataset)
 	
 end
 
+
+
+function plot_badthetas(int wavenum, string dataset)
+
+	int i 
+	int nr
+	wave badthetasx
+	string w2d
+	string w2x
+	
+	w2d= "dat"+num2str(wavenum)+dataset //current 2d array
+	w2x = "dat"+num2str(wavenum)+"x_array" //voltage array
+	
+	wave wavenm = $w2d
+	duplicate /o wavenm, wavenmcopy
+	
+	plot_thetas(wavenum, dataset)
+	nr = dimsize(badthetasx,0)
+	
+	
+	if (dimsize(wavenmcopy,1)<151)
+		matrixtranspose wavenmcopy
+	endif
+	
+	display
+	
+	for(i=0; i < nr; i +=1)
+		appendtograph wavenmcopy[badthetasx[i]][] vs $w2x
+	endfor
+
+	QuickColorSpectrum()
+	
+	ModifyGraph fSize=24
+    ModifyGraph gFont="Gill Sans Light"
+    ModifyGraph width={Aspect,1.62},height=300
+	Label bottom "voltage"
+    Label left dataset
+	
+end 
 	
 	
 function full_procedure(int wavenum, string dataset)
 
 	avg_raveel(wavenum, dataset)
-	plot_thetas(wavenum, dataset)
+	plot_badthetas(wavenum, dataset)
 	plot2d_raveel(wavenum,dataset)
 
 end
+
+
+
+//from: https://www.wavemetrics.com/forum/igor-pro-wish-list/automatically-color-traces-multi-trace-graph
+
+Function QuickColorSpectrum()                            // colors traces with 12 different colors
+    String Traces    = TraceNameList("",";",1)               // get all the traces from the graph
+    Variable Items   = ItemsInList(Traces)                   // count the traces
+    Make/FREE/N=(11,3) colors = {{65280,0,0}, {65280,43520,0}, {0,65280,0}, {0,52224,0}, {0,65280,65280}, {0,43520,65280}, {0,15872,65280}, {65280,16384,55552}, {36864,14592,58880}, {0,0,0},{26112,26112,26112}}
+    Variable i
+    for (i = 0; i <DimSize(colors,1); i += 1)
+        ModifyGraph rgb($StringFromList(i,Traces))=(colors[0][i],colors[1][i],colors[2][i])      // set new color offset
+    endfor
+End
+
+
+
 
 
 // plotted thetas from fitting each sweep = good and bad for each line
