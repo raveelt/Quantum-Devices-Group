@@ -356,6 +356,50 @@ end
 
 
 
+function centering(int wavenum, string dataset)
+
+	wave fit_params
+	string w2d
+	string w2x
+	int i
+	int nr
+	
+	w2d= "dat"+num2str(wavenum)+dataset //current 2d array
+	w2x = "dat"+num2str(wavenum)+"x_array" //voltage array
+	
+	wave wavex = $w2x
+	
+	get_fit_params(wavenum, dataset)
+	
+	duplicate /O $w2d centered_2dx
+	
+	if (dimsize(centered_2dx,1)<151)
+		matrixtranspose centered_2dx
+	endif
+	
+	nr = dimsize(centered_2dx,0)
+	
+	centered_2dx = 0
+	
+	duplicate /o/r = [0,nr][3] fit_params mids
+	
+	
+	for(i = 0; i < nr; i += 1)
+	
+		duplicate /o wavex wavex2
+		matrixtranspose wavex2
+		
+		wavex2 -= mids[i]
+		centered_2dx[1 * i] = wavex2[q] //this collects the centred x data 
+		 	
+	endfor
+		 
+	
+
+end
+
+	
+
 //from: https://www.wavemetrics.com/forum/igor-pro-wish-list/automatically-color-traces-multi-trace-graph
 
 Function QuickColorSpectrum()                            // colors traces with 12 different colors
