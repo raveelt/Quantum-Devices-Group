@@ -350,6 +350,7 @@ function full_procedure(int wavenum, string dataset)
 
 	avg_raveel(wavenum, dataset)
 	plot_badthetas(wavenum, dataset)
+	centering(wavenum, dataset)
 	plot2d_raveel(wavenum,dataset)
 
 end
@@ -363,25 +364,32 @@ function centering(int wavenum, string dataset)
 	string w2x
 	int i
 	int nr
+	int nc
 	
 	w2d= "dat"+num2str(wavenum)+dataset //current 2d array
 	w2x = "dat"+num2str(wavenum)+"x_array" //voltage array
 	
 	wave wavex = $w2x
+	wave waved = $w2d
 	
 	get_fit_params(wavenum, dataset)
 	
+	duplicate /o $w2d wavecopy
 	duplicate /O $w2d centered_2dx
+	duplicate /o $w2d new2dwave
 	
 	if (dimsize(centered_2dx,1)<151)
 		matrixtranspose centered_2dx
+		matrixtranspose wavecopy
 	endif
 	
 	nr = dimsize(centered_2dx,0)
+	nc = dimsize(centered_2dx,1)
 	
 	centered_2dx = 0
 	
 	duplicate /o/r = [0,nr][3] fit_params mids
+	duplicate /o/r =[nc/10, nc - nc/10] $w2x new_x
 	
 	
 	for(i = 0; i < nr; i += 1)
@@ -390,10 +398,36 @@ function centering(int wavenum, string dataset)
 		matrixtranspose wavex2
 		
 		wavex2 -= mids[i]
-		centered_2dx[1 * i] = wavex2[q] //this collects the centred x data 
+		centered_2dx[1 * i] = wavex2[q] //this forloop collects the centred x data
+		
+		duplicate /o/r=[i][0,nc] wavecopy sweep
+		
+		Interpolate2/T=2/E=2/Y=new_y/X=new_x/I=3 wavex2, sweep
+		
+		matrixtranspose new_y
+		
+		new2dwave[1*i] = new_y[q]
 		 	
 	endfor
-		 
+	
+	display; //start with empty graph
+	
+	matrixtranspose new2dwave
+	
+	appendimage new2dwave //append image of data
+	ModifyImage new2dwave ctab= {*,*,Turbo,0} //setting color (idk why it prefers the pointer)
+	ColorScale /A=RC /E width=20 //puts it on the right centre, /E places it outside
+
+    Label bottom "voltage"
+    //Label left dataset
+
+    ModifyGraph fSize=24
+    ModifyGraph gFont="Gill Sans Light"
+    ModifyGraph width={Aspect,1.62},height=300
+    
+    
+    // wrong size matrix, create new one, forgot to seperate good thetas from bad. also theres an error that pops up
+    
 	
 
 end
