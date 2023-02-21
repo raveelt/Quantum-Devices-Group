@@ -2,6 +2,47 @@
 #pragma rtGlobals=3				// Use modern global access method and strict wave access
 #pragma DefaultTab={3,20,4}		// Set default tab width in Igor Pro 9 and later
 
+function /wave quick_avg(wave waved, wave wavex) // /WAVE lets your return a wave
+
+// averaging 2D wave down to 1D
+
+	
+	variable i
+	int nc 
+	int nr 
+	
+	duplicate /o waved wavenm
+	
+	if (dimsize(wavenm,1)<151)
+		matrixtranspose wavenm
+	endif
+	
+	nr = dimsize(wavenm,0) //number of rows (total sweeps)
+	nc = dimsize(wavenm,1) //number of columns (data points)
+	
+	make /n=(nc, 1 ) /o avg_current
+	avg_current = wavenm[0][p] //first row
+	
+	for (i=1; i < nr ; i+=1)
+		avg_current += wavenm[i][p] //sums all the rows
+	endfor
+	
+	avg_current = avg_current / nr // divide by total rows
+	
+	display avg_current[][0] vs wavex
+	Label bottom "voltage"
+    Label left "current"
+    ModifyGraph fSize=24
+    ModifyGraph gFont="Gill Sans Light"
+    ModifyGraph width={Aspect,1.62},height=300
+	
+	return avg_current
+	
+end
+
+
+
+
 function /wave avg_raveel(int wavenum, string dataset) // /WAVE lets your return a wave
 
 // averaging over total sweeps without centering or removing any data
@@ -144,7 +185,7 @@ function /wave fit_transition(current_array,x_array)
 	
 	//smoothing and differentiating //could be useful for amp guess and linear term guess
 	Duplicate/O current_array, smooth_current;DelayUpdate
-	Smooth/S=4 201, smooth_current;DelayUpdate
+	Smooth/S=4 201, smooth_current;DelayUpdate //double check all the smoothing
 	
 	
 	FuncFit Chargetransition W_coef smooth_current[][0] /X= x_array /D 
@@ -360,6 +401,8 @@ end
 function centering(int wavenum, string dataset)
 
 	wave fit_params
+	wave avg_current
+	wave w_coef
 	string w2d
 	string w2x
 	int i
@@ -376,7 +419,7 @@ function centering(int wavenum, string dataset)
 	
 	duplicate /o $w2d wavecopy
 	duplicate /O $w2d centered_2dx
-	duplicate /o $w2d new2dwave
+	//duplicate /o $w2d new2dwave
 	
 	if (dimsize(centered_2dx,1)<151)
 		matrixtranspose centered_2dx
@@ -390,6 +433,9 @@ function centering(int wavenum, string dataset)
 	
 	duplicate /o/r = [0,nr][3] fit_params mids
 	duplicate /o/r =[nc/10, nc - nc/10] $w2x new_x
+	
+	
+	make /o/n = (nr, (dimsize(new_x,0))) new2dwave
 	
 	
 	for(i = 0; i < nr; i += 1)
@@ -424,6 +470,19 @@ function centering(int wavenum, string dataset)
     ModifyGraph fSize=24
     ModifyGraph gFont="Gill Sans Light"
     ModifyGraph width={Aspect,1.62},height=300
+    
+     
+    quick_avg(new2dwave, new_x) //centred and averaged 2D data, returns a wave called avg_current
+    ModifyGraph mode=2,lsize=3,rgb=(48059,48059,48059)
+    
+    fit_transition(avg_current, new_x) // get fit transition
+    
+    make /o/n=(dimsize(new_x,0)) fit
+    
+    fit = w_coef[0]*tanh((new_x - w_coef[3])/(2*w_coef[2])) + w_coef[4]*new_x + w_coef[1]
+    
+    appendToGraph fit vs new_x
+    
     
     
     // wrong size matrix, create new one, forgot to seperate good thetas from bad. also theres an error that pops up
