@@ -2,10 +2,9 @@
 #pragma rtGlobals=3				// Use modern global access method and strict wave access
 #pragma DefaultTab={3,20,4}		// Set default tab width in Igor Pro 9 and later
 
-function /wave quick_avg(wave waved, wave wavex) // /WAVE lets your return a wave
+function /wave avg_wave(wave waved, wave wavex)
 
 // averaging 2D wave down to 1D
-
 	
 	variable i
 	int nc 
@@ -35,6 +34,8 @@ function /wave quick_avg(wave waved, wave wavex) // /WAVE lets your return a wav
     ModifyGraph fSize=24
     ModifyGraph gFont="Gill Sans Light"
     ModifyGraph width={Aspect,1.62},height=300
+    
+   
 	
 	return avg_current
 	
@@ -43,12 +44,9 @@ end
 
 
 
-function /wave avg_raveel(int wavenum, string dataset) // /WAVE lets your return a wave
+function /wave quick_avg(int wavenum, string dataset) // /WAVE lets your return a wave
 
 // averaging over total sweeps without centering or removing any data
-//
-//inputs = wavenum: datnum
-//         dataset: "cscurrent_2d","dotcurrent_2d"
 	
 	variable i
 	string w2d
@@ -79,10 +77,12 @@ function /wave avg_raveel(int wavenum, string dataset) // /WAVE lets your return
 	
 	display avgcurrent[][0] vs $w2x
 	Label bottom "voltage"
-    Label left dataset
+    Label left "current"
     ModifyGraph fSize=24
     ModifyGraph gFont="Gill Sans Light"
     ModifyGraph width={Aspect,1.62},height=300
+    ModifyGraph mode=2,lsize=2,rgb=(21845,21845,21845)
+	Legend/C/N=text0/J/A=RT "\\Z14\\Z16\\s(avgcurrent) quick average of dat" + num2str(wavenum)
 	
 	return avgcurrent
 	
@@ -90,11 +90,9 @@ end
 
 
 	
-function plot2d_raveel(num,dataset)
-//plots the repeats against the sweeps for the specified dataset
-//
-//inputs =  num: datnum
-//          dataset: "cscurrent_2d","dotcurrent_2d"
+function plot2d_heatmap(num,dataset)
+
+//plots the repeats against the sweeps for dataset cscurrent_2d
 
 	variable num 
 	string dataset
@@ -114,49 +112,47 @@ function plot2d_raveel(num,dataset)
 	ColorScale /A=RC /E width=20 //puts it on the right centre, /E places it outside
 
     Label bottom "voltage"
-    Label left dataset
+    Label left "repeats"
 
     ModifyGraph fSize=24
     ModifyGraph gFont="Gill Sans Light"
     ModifyGraph width={Aspect,1.62},height=300
+    TextBox/C/N=text1/A=MT/E=2 "\\Z14\\Z16 raw 2D plot of dat" + num2str(num)
 
 end
 
 
-//Function to get initial paramaters
 
 function /wave get_initial_params(sweep, x_array)
 
 // for a given sweep returns a guess of initial parameters for the fit function: Charge transiton
-	wave sweep //have to declare function parameters first
+
+	wave sweep 
 	wave x_array
-//	
-//	
-//	
-	variable amp = wavemax(sweep) - wavemin(sweep) //might be worthwile looking at a maximum/ minimum near the middle
+	
+		
+	variable amp = wavemax(sweep) - wavemin(sweep) //might be worthwile looking for a maximum/minimum with differentiation
+	//variable amp = 0.001
 	variable const = mean(sweep)
 	variable theta = 5
 	
 	duplicate /o sweep sweepsmooth
-	Smooth/S=4 101, sweepsmooth ;DelayUpdate
+	Smooth/S=4 201, sweepsmooth ;DelayUpdate
 	
 	differentiate sweepsmooth
     extract/INDX sweepsmooth, extractedwave, sweepsmooth == wavemin(sweepsmooth)
     variable mid = x_array[extractedwave[0]]
 
+	//extract/INDX sweepsmooth, extractedwave, sweepsmooth == 0 //new
+	//variable amp = sweep[extractedwave[0]] - sweep[extractedwave[1]] // new
 	
-	//smoothing and differentiating //could be useful for amp guess and linear term guess
-	//Duplicate/O avgcurrent,avgcurrent_smth;DelayUpdate
-	//Smooth/S=4 121, avgcurrent_smth;DelayUpdate
-	//differentiate avgcurrent_smth
-
 	
 	variable lin = 0.001  // differentiated value of flat area?
 	
 	Make /D/N=5/O W_coef
 	W_coef[0] = {amp,const,theta,mid,lin}
 	
-	killwaves extractedwave, sweepsmooth
+	//killwaves extractedwave, sweepsmooth
 	return W_coef
 
 end
@@ -170,27 +166,16 @@ function /wave fit_transition(current_array,x_array)
 	
 	wave current_array
 	wave x_array
-
 	wave W_coef
-	
-	//string wnamex
-	
-	//wnamex = "dat"+num2str(datnum)+"x_array"
-	
-	
-	//Make/D/N=5/O W_coef
-	//W_coef = get_initial_params(sweep)
 	
 	get_initial_params(current_array, x_array)
 	
 	//smoothing and differentiating //could be useful for amp guess and linear term guess
+	
 	Duplicate/O current_array, smooth_current;DelayUpdate
-	Smooth/S=4 201, smooth_current;DelayUpdate //double check all the smoothing
-	
-	
+	Smooth/S=4 51, smooth_current;DelayUpdate                           //double check all the smoothing
 	FuncFit Chargetransition W_coef smooth_current[][0] /X= x_array /D 
 	
-	//return W_coef
 end
 	
 
@@ -198,7 +183,7 @@ end
 //function to perform all the fits
 
 function /wave get_fit_params(int wavenum, string dataset)
-//
+
 	variable i
 	string w2d
 	string w2x
@@ -209,20 +194,20 @@ function /wave get_fit_params(int wavenum, string dataset)
 	wave W_coef
 	wave W_sigma
 	 
-//	
+
 	w2d="dat"+num2str(wavenum)+dataset //current 2d array
 	w2x = "dat"+num2str(wavenum)+"x_array" //voltage array
-//	
+	
 	wave wavenm = $w2d
-//	
+	
 	if (dimsize(wavenm,1)<151)
 		matrixtranspose wavenm
 	endif
-//	
+	
 	nr = dimsize(wavenm,0) //number of rows (total sweeps)
 	nc = dimsize(wavenm,1) //number of columns (data points)
-//	
-//	
+	
+
 	make /N= (2 * nr, 5) /O fit_params
 	make /N= (nc) /O temp_wave
 	  
@@ -235,7 +220,7 @@ function /wave get_fit_params(int wavenum, string dataset)
       fit_transition(temp_wave, $w2x)
       fit_params[1 * i] = W_coef[q]
       fit_params[(nr/2) + i] = W_sigma[q] 
-//		
+		
 	endfor
 	
 	return fit_params
@@ -243,29 +228,6 @@ function /wave get_fit_params(int wavenum, string dataset)
 end
 	
 	
-
-//function plot_thetas(int wavenum, string dataset)
-//	
-//	wave fit_params
-//	int nr
-//	get_fit_params(wavenum, dataset)
-//	nr = dimsize(fit_params,0)
-//	
-//	display fit_params[0,nr/2 - 1][2]
-//	
-//	ModifyGraph fSize=24
-//    ModifyGraph gFont="Gill Sans Light"
-//    ModifyGraph width={Aspect,1.62},height=300
-//    ModifyGraph mode=3,rgb=(0,0,0,32768)
-//    
-//    Label bottom "repeat"
-//    Label left "theta values"
-//    
-//    
-//    
-//	
-//end
-
 
 function plot_thetas(int wavenum, string dataset)
 	
@@ -306,13 +268,13 @@ function plot_thetas(int wavenum, string dataset)
 		
 		if (abs(thetas[i] - thetamean) < (2 * thetastd))
 			
-			insertPoints /v = (thetas[i]) nr, 1, goodthetas
-			insertpoints /v = (i) nr, 1, goodthetasx
+			insertPoints /v = (thetas[i]) nr, 1, goodthetas // value of theta
+			insertpoints /v = (i) nr, 1, goodthetasx        // the repeat
 			
 		else
 		
-			insertPoints /v = (thetas[i]) nr, 1, badthetas
-			insertpoints /v = (i) nr, 1, badthetasx
+			insertPoints /v = (thetas[i]) nr, 1, badthetas // value of theta
+			insertpoints /v = (i) nr, 1, badthetasx        // repeat
 			
 		endif
 		
@@ -330,11 +292,12 @@ function plot_thetas(int wavenum, string dataset)
     ModifyGraph gFont="Gill Sans Light"
     ModifyGraph width={Aspect,1.62},height=300
     ModifyGraph lstyle(meanwave)=3,rgb(meanwave)=(17476,17476,17476)
-    ModifyGraph lstyle(stdwave)=3,rgb(stdwave)=(30583,30583,30583)
-    ModifyGraph lstyle(stdwave2)=3,rgb(stdwave2)=(30583,30583,30583)
-    ModifyGraph mode(goodthetas)=3,lsize(goodthetas)=2
-    ModifyGraph mode(badthetas)=3,rgb(badthetas)=(29524,1,58982)
-
+    ModifyGraph lstyle(stdwave)=3,rgb(stdwave)=(52428,1,1)
+    ModifyGraph lstyle(stdwave2)=3,rgb(stdwave2)=(52428,1,1)
+    ModifyGraph mode(goodthetas)=3,lsize(goodthetas)=2, rgb(goodthetas)=(2,39321,1)
+    ModifyGraph mode(badthetas)=3
+    Legend/C/N=text0/J/A=RT "\\s(meanwave) mean\r\\s(stdwave) 2*std\r\\s(goodthetas) good\r\\s(badthetas) outliers"
+	TextBox/C/N=text1/A=MT/E=2 "\\Z14\\Z16 thetas of dat" + num2str(wavenum)
     
     
     
@@ -383,19 +346,9 @@ function plot_badthetas(int wavenum, string dataset)
     ModifyGraph width={Aspect,1.62},height=300
 	Label bottom "voltage"
     Label left dataset
+    TextBox/C/N=text1/A=MT/E=2 "\\Z14\\Z16 bad thetas of dat" + num2str(wavenum)
 	
 end 
-	
-	
-function full_procedure(int wavenum, string dataset)
-
-	avg_raveel(wavenum, dataset)
-	plot_badthetas(wavenum, dataset)
-	centering(wavenum, dataset)
-	plot2d_raveel(wavenum,dataset)
-
-end
-
 
 
 function centering(int wavenum, string dataset)
@@ -403,11 +356,14 @@ function centering(int wavenum, string dataset)
 	wave fit_params
 	wave avg_current
 	wave w_coef
+	wave w_sigma
+	wave goodthetasx
 	string w2d
 	string w2x
 	int i
 	int nr
 	int nc
+	int nnr
 	
 	w2d= "dat"+num2str(wavenum)+dataset //current 2d array
 	w2x = "dat"+num2str(wavenum)+"x_array" //voltage array
@@ -428,6 +384,7 @@ function centering(int wavenum, string dataset)
 	
 	nr = dimsize(centered_2dx,0)
 	nc = dimsize(centered_2dx,1)
+	nnr = dimsize(goodthetasx,0)
 	
 	centered_2dx = 0
 	
@@ -435,18 +392,19 @@ function centering(int wavenum, string dataset)
 	duplicate /o/r =[nc/10, nc - nc/10] $w2x new_x
 	
 	
-	make /o/n = (nr, (dimsize(new_x,0))) new2dwave
+	make /o/n = (nnr, (dimsize(new_x,0))) new2dwave
 	
 	
-	for(i = 0; i < nr; i += 1)
+	for(i = 0; i < nnr; i += 1)
 	
 		duplicate /o wavex wavex2
 		matrixtranspose wavex2
 		
-		wavex2 -= mids[i]
-		centered_2dx[1 * i] = wavex2[q] //this forloop collects the centred x data
+		wavex2 -= mids[goodthetasx[i]]
+		wavex2 += mean(mids)
+		centered_2dx[1 * goodthetasx[i]] = wavex2[q] //this forloop collects the centred x data
 		
-		duplicate /o/r=[i][0,nc] wavecopy sweep
+		duplicate /o/r=[goodthetasx[i]][0,nc] wavecopy sweep
 		
 		Interpolate2/T=2/E=2/Y=new_y/X=new_x/I=3 wavex2, sweep
 		
@@ -464,34 +422,30 @@ function centering(int wavenum, string dataset)
 	ModifyImage new2dwave ctab= {*,*,Turbo,0} //setting color (idk why it prefers the pointer)
 	ColorScale /A=RC /E width=20 //puts it on the right centre, /E places it outside
 
-    Label bottom "voltage"
+    Label left "repeats"
     //Label left dataset
 
     ModifyGraph fSize=24
     ModifyGraph gFont="Gill Sans Light"
     ModifyGraph width={Aspect,1.62},height=300
+    TextBox/C/N=text1/A=MT/E=2 "\\Z14\\Z16 Centred good thetas of dat" + num2str(wavenum)
     
      
-    quick_avg(new2dwave, new_x) //centred and averaged 2D data, returns a wave called avg_current
+    avg_wave(new2dwave, new_x) //centred and averaged 2D data, returns a wave called avg_current
     ModifyGraph mode=2,lsize=3,rgb=(48059,48059,48059)
     
+    
     fit_transition(avg_current, new_x) // get fit transition
-    
     make /o/n=(dimsize(new_x,0)) fit
-    
     fit = w_coef[0]*tanh((new_x - w_coef[3])/(2*w_coef[2])) + w_coef[4]*new_x + w_coef[1]
-    
     appendToGraph fit vs new_x
-    
-    
-    
-    // wrong size matrix, create new one, forgot to seperate good thetas from bad. also theres an error that pops up
-    
-	
+    Legend/C/N=text0/J/E=2 "\\s(avg_current) average\r\\s(fit) fit"
+    TextBox/C/N=text1/A=MT/E=2 "\\Z14\\Z16 dat" + num2str(wavenum) + " average"
+    TextBox/C/N=text2/A=MC/E=2 "\\Z14\\Z16 theta = " + num2str(w_coef[2]) + "+/-" +  num2str(W_sigma[2])
 
 end
 
-	
+
 
 //from: https://www.wavemetrics.com/forum/igor-pro-wish-list/automatically-color-traces-multi-trace-graph
 
@@ -507,36 +461,14 @@ End
 
 
 
+function chargetransition_procedure(int wavenum)
 
-
-// plotted thetas from fitting each sweep = good and bad for each line
-
-//avg_raveel(3920,"cscurrent_2d")
-//ModifyGraph rgb=(0,0,0)
-//Make/D/N=5/O W_coef
-//W_coef[0] = {0.02,1.17,-0.1,0,1}
-//FuncFit Chargetransition W_coef avgcurrent[][0] /X=dat3920x_array /D 
-
-
+	string dataset
+	dataset = "cscurrent_2d"
 	
-	//need to figure out fitting in Igor
-	//gradient descent helped figure out a specific parameter, need to look at dat analysis to recall
-	// amplitude was just the max and min value subtracted, theta was set to 5
-	
-	
+	quick_avg(wavenum, dataset)
+	plot_badthetas(wavenum, dataset)
+	centering(wavenum, dataset)
+	plot2d_heatmap(wavenum,dataset)
 
-// plotted the bad thetas only (above some standard deviation)
-	//nice to see the errors
-	
-
-// plotted the avg of the good thetas with the avg theta value
-	//I belive this averaging takes the good thetas, the data is centred then averaged.
-	// I averaged over all data, 
-
-
-//Savitsky golay smoothing exists in Igor
-	//https://www.wavemetrics.com/products/igorpro/dataanalysis/signalprocessing/smoothing
-	
-	
-	
-	//duplicate /O/R = fit_params[0,nr/2 - 1][2] fit_params, wave2
+end
