@@ -174,7 +174,8 @@ function /wave fit_transition(current_array,x_array, condition)
 	if(condition == 0)
 		get_initial_params(current_array, x_array)
 	else
-		get_initial_params(avgcurrent, x_array)
+		//get_initial_params(avgcurrent, x_array)
+		fit_transition(avgcurrent, x_array, 0) // probably would be faster to calculate it once then duplicate each time.
 	endif
 	
 	//smoothing and differentiating //could be useful for amp guess and linear term guess
