@@ -162,13 +162,20 @@ end
 	
 //function to perform a fit
 
-function /wave fit_transition(current_array,x_array)
+function /wave fit_transition(current_array,x_array, condition)
 	
 	wave current_array
 	wave x_array
+	int condition
+	wave avgcurrent
+	
 	wave W_coef
 	
-	get_initial_params(current_array, x_array)
+	if(condition == 0)
+		get_initial_params(current_array, x_array)
+	else
+		get_initial_params(avgcurrent, x_array)
+	endif
 	
 	//smoothing and differentiating //could be useful for amp guess and linear term guess
 	
@@ -182,7 +189,7 @@ end
 
 //function to perform all the fits
 
-function /wave get_fit_params(int wavenum, string dataset)
+function /wave get_fit_params(int wavenum, string dataset, int condition)
 
 	variable i
 	string w2d
@@ -217,7 +224,7 @@ function /wave get_fit_params(int wavenum, string dataset)
 		//store in corresponding 2d array
 		
 	  temp_wave = wavenm[i][p]
-      fit_transition(temp_wave, $w2x)
+      fit_transition(temp_wave, $w2x, condition)
       fit_params[1 * i] = W_coef[q]
       fit_params[(nr/2) + i] = W_sigma[q] 
 		
@@ -229,7 +236,7 @@ end
 	
 	
 
-function plot_thetas(int wavenum, string dataset)
+function plot_thetas(int wavenum, string dataset, int condition)
 	
 	wave fit_params
 	variable thetamean
@@ -237,7 +244,7 @@ function plot_thetas(int wavenum, string dataset)
 	variable i
 	int nr
 	
-	get_fit_params(wavenum, dataset)
+	get_fit_params(wavenum, dataset, condition)
 	nr = dimsize(fit_params,0)
 	nr = nr/2-1               //only the first half are associated with theta values,
 	                          //the second have are the uncertainties 
@@ -311,7 +318,7 @@ end
 
 
 
-function plot_badthetas(int wavenum, string dataset)
+function plot_badthetas(int wavenum, string dataset, int condition)
 
 	int i 
 	int nr
@@ -325,7 +332,7 @@ function plot_badthetas(int wavenum, string dataset)
 	wave wavenm = $w2d
 	duplicate /o wavenm, wavenmcopy
 	
-	plot_thetas(wavenum, dataset)
+	plot_thetas(wavenum, dataset, condition)
 	nr = dimsize(badthetasx,0)
 	
 	
@@ -351,7 +358,7 @@ function plot_badthetas(int wavenum, string dataset)
 end 
 
 
-function centering(int wavenum, string dataset)
+function centering(int wavenum, string dataset, int condition)
 
 	wave fit_params
 	wave avg_current
@@ -371,7 +378,7 @@ function centering(int wavenum, string dataset)
 	wave wavex = $w2x
 	wave waved = $w2d
 	
-	get_fit_params(wavenum, dataset)
+	get_fit_params(wavenum, dataset, condition)
 	
 	duplicate /o $w2d wavecopy
 	duplicate /O $w2d centered_2dx
@@ -435,9 +442,9 @@ function centering(int wavenum, string dataset)
     ModifyGraph mode=2,lsize=3,rgb=(48059,48059,48059)
     
     
-    fit_transition(avg_current, new_x) // get fit transition
+    fit_transition(avg_current, new_x, condition) // get fit transition
     make /o/n=(dimsize(new_x,0)) fit
-    fit = w_coef[0]*tanh((new_x - w_coef[3])/(2*w_coef[2])) + w_coef[4]*new_x + w_coef[1]
+    fit = w_coef[0]*tanh((new_x - w_coef[3])/(2*w_coef[2])) + w_coef[4]*new_x + w_coef[1] //theres already a function, I dont need to make it like this.
     appendToGraph fit vs new_x
     Legend/C/N=text0/J/E=2 "\\s(avg_current) average\r\\s(fit) fit"
     TextBox/C/N=text1/A=MT/E=2 "\\Z14\\Z16 dat" + num2str(wavenum) + " average"
@@ -461,14 +468,33 @@ End
 
 
 
-function chargetransition_procedure(int wavenum)
+function chargetransition_procedure(int wavenum, int condition)
 
 	string dataset
 	dataset = "cscurrent_2d"
 	
-	quick_avg(wavenum, dataset)
-	plot_badthetas(wavenum, dataset)
-	centering(wavenum, dataset)
-	plot2d_heatmap(wavenum,dataset)
+	quick_avg(wavenum, dataset) // quick average plot
+	plot_badthetas(wavenum, dataset, condition) // thetas vs repeat plot and bad theta sweep plot
+	centering(wavenum, dataset, condition) // centred plot and average plot
+	plot2d_heatmap(wavenum,dataset) // raw 2d plot
 
 end
+
+
+
+// bounds for fit parameters
+// setting amplitude by differentiation seems to not work
+// lin term could maybe be set by picking portions of the start of the wave or the differentiation wave
+
+
+//from meeting:
+			//DONE// use fit parameters from quick avg for all sweeps // DONE, But i dont love the layout
+
+
+//		doesnt work for conductance peaks that are shifting (maybe have an on/off option?)
+// 		all plots in one window
+// 		fix x - scaling
+// 		deal with some interlacing (dividing current set into subsets of sweeps)
+// 		keep all avg_current waves (name them accordingly)
+// 		centering option (yes/no)
+
