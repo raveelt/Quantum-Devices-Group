@@ -490,12 +490,22 @@ end
 
 //from meeting:
 			//DONE// use fit parameters from quick avg for all sweeps // DONE, But i dont love the layout
-
+			//DONE// fixed how the fit parameters are layed out W_coef then W_sigma
+			
 
 //		doesnt work for conductance peaks that are shifting (maybe have an on/off option?)
+
 // 		all plots in one window
-// 		fix x - scaling
+
+// 		    //DONE//fix x - scaling
+
 // 		deal with some interlacing (dividing current set into subsets of sweeps)
-// 		keep all avg_current waves (name them accordingly)
+						//(would likely just need another function)
+
+// 		     //DONE// keep all avg_current waves (name them accordingly)
+							//dat3320quickavg
+							//dat3320centavg
+							//dat3320fit_params
+
 // 		centering option (yes/no)
 
