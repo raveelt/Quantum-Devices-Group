@@ -495,7 +495,7 @@ end
 
 //		doesnt work for conductance peaks that are shifting (maybe have an on/off option?)
 
-// 		all plots in one window
+// 		    //DONE// all plots in one window
 
 // 		    //DONE//fix x - scaling
 

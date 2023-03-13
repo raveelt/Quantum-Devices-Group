@@ -530,8 +530,17 @@ function chargetransition_procedure2(int wavenum, int condition)
 	plot_badthetas2(wavenum, dataset, condition) // thetas vs repeat plot and bad theta sweep plot
 	centering2(wavenum, dataset, condition) // centred plot and average plot
 	plot2d_heatmap2(wavenum,dataset) // raw 2d plot
+	
+	
 
 end
+
+//function chargetransition_procedure2m(int wavenum, int condition)
+//
+//	chargetransition_procedure2(wavenum, condition)
+//	MultiGraphLayout(WinList("*", ";", "WIN:1"), 3, 20, "AllGraphLayout")
+//
+//end
 
 
 //from: https://www.wavemetrics.com/forum/igor-pro-wish-list/automatically-color-traces-multi-trace-graph
@@ -550,3 +559,210 @@ End
 
 
 // The avg current x-scale might be wrong so its causing that nonsense to happen (maybe in the fit?)
+
+
+
+
+
+
+
+
+
+//from:
+// https://www.wavemetrics.com/code-snippet/stacked-plots-multiple-plots-layout
+
+function MultiGraphLayout(GraphList, nCols, spacing, layoutName)
+    string GraphList        // semicolon separated list of graphs to be appended to layout
+    variable nCols      // number of graph columns
+    string layoutName   // name of the layout
+    variable spacing        // spacing between graphs in points!
+   
+    // how many graphs are there and how many rows are required
+    variable nGraphs = ItemsInList(GraphList)
+    variable nRows = ceil(nGraphs / nCols)
+    variable LayoutWidth, LayoutHeight 
+    variable gWidth, gHeight
+    variable maxWidth = 0, maxHeight = 0
+    variable left, top
+    variable i, j, n = 0
+
+    string ThisGraph
+
+    // detect total layout size from individual graph sizes; get maximum graph size as column/row size
+    for(i=0; i<nGraphs; i+=1)
+       
+        ThisGraph = StringFromList(i, GraphList)
+        GetWindow $ThisGraph gsize
+        gWidth = (V_right - V_left)
+        gHeight = (V_bottom - V_top)
+       
+        // update maximum
+        maxWidth = gWidth > maxWidth ? gWidth : maxWidth
+        maxHeight = gHeight > maxHeight ? gHeight : maxHeight  
+    endfor
+   
+    // calculate layout size
+    LayoutWidth = maxWidth * nCols + ((nCols + 1) * spacing)
+    LayoutHeight = maxHeight * nRows + ((nRows +1) * spacing)
+   
+    // make layout; kill if it exists
+    DoWindow $layoutName
+    if(V_flag)
+        KillWindow $layoutName
+    endif
+   
+    NewLayout/N=$layoutName/K=1/W=(517,55,1451,800)
+    LayoutPageAction size=(LayoutWidth, LayoutHeight), margins=(0,0,0,0)
+    ModifyLayout mag=0.75
+   
+    //append graphs
+    top = spacing
+    for(i=0; i<nRows; i+=1)
+   
+        // reset vertical position for each column
+        left = spacing
+       
+        for (j=0; j<    nCols; j+=1)
+       
+            ThisGraph = StringFromList(n, GraphList)
+            if(strlen(ThisGraph) == 0)
+                return 0
+            endif
+           
+            GetWindow $ThisGraph gsize
+            gWidth = (V_right - V_left)
+            gHeight = (V_bottom - V_top)
+           
+            AppendLayoutObject/F=0 /D=1 /R=(left, top, (left + gWidth), (top + gHeight)) graph $ThisGraph
+       
+            // shift next starting positions to the right
+            left += maxWidth + spacing
+           
+            // increase plot counter
+            n += 1             
+        endfor  
+       
+        // shift next starting positions dwon
+        top += maxHeight + spacing
+    endfor
+   
+    return 1
+end
+
+
+
+// https://www.wavemetrics.com/code-snippet/stacked-plots-multiple-plots-graph
+
+
+function MakeStackedGraph(yWaveList, xWaveList, nCols, spacing, GraphName, mirror)
+    string yWaveList    // semicolon separated list containing wave names to be plotted
+    string xWaveList    // semicolon separated list containg corresonding x data; if list items are empty, y-waves will be plotted against x-scaling
+    variable nCols      // number of columns within the stacked graph
+    variable spacing    // spacing between plots in terms of fraction of total plot area
+    string GraphName    // name of the stacked graph
+    variable mirror     // mirror axis on = 1, or off = 0
+   
+    variable nGraphs
+    variable nRows
+    variable nGaps
+    variable yLength
+    variable xLength
+    variable y0, x0, y1, x1
+    variable i, j, n = 0
+   
+    string yWave, xWave
+    string yAxisName, xAxisName, yMirrorName, xMirrorName
+       
+    // how many graphs are there and how many rows are required
+    nGraphs = ItemsInList(yWaveList)
+    nRows = ceil(nGraphs / nCols)
+   
+    // calculate length of axis from given spacing
+    nGaps = nCols - 1
+    xLength = (1 - spacing * nGaps) / nCols    
+   
+    nGaps = nRows - 1
+    yLength = (1 - spacing * nGaps) / nRows
+   
+    // Display empty window; kill if it exists
+    DoWindow/F $GraphName
+    if(V_flag)
+        KillWindow $GraphName
+    endif
+    Display/K=1 /N= $Graphname 
+   
+    // append traces
+    for(i=0; i<nRows; i+=1)
+   
+        // reset vertical axis position
+        y0 = 0
+        x1 = 0
+
+        for (j=0; j<    nCols; j+=1)
+           
+            // get wave names from lists
+            yWave = StringFromList(n, yWaveList)
+            yAxisName = "yAxis" + num2str(n)               
+            xWave = StringFromList(n, xWaveList)
+            xAxisName = "xAxis" + num2str(n)
+           
+            if(strlen(xWave) == 0)
+                // if x-string is empty; plot against wave scaling
+                AppendToGraph/L=$yAxisName /B=$xAxisName $yWave
+            else
+                AppendToGraph/L=$yAxisName /B=$xAxisName $yWave vs $xWave
+            endif
+           
+            // set lower left position of y and x axis
+            ModifyGraph freePos($yAxisName)={y0,kwFraction}
+            ModifyGraph freePos($xAxisName)={x0,kwFraction}
+           
+            // set length of the axis
+            ModifyGraph axisEnab($yAxisName)={y1,(y1+yLength)}
+            ModifyGraph axisEnab($xAxisName)={x1,(x1+xLength)}
+           
+            // do some formatting
+            ModifyGraph tick($yAxisName) = 2, tick($xAxisName) = 2
+            ModifyGraph btlen($yAxisName) = 4, btlen($xAxisName) = 4
+       
+            // append mirror axis
+            if(mirror)
+                yMirrorName = "yMirror" + num2str(n)
+                NewFreeAxis/L $yMirrorName
+                ModifyFreeAxis $yMirrorName master = $yAxisName
+                ModifyGraph freePos($yMirrorName) ={(y0+xLength), kwFraction}
+                ModifyGraph axisEnab($yMirrorName) ={y1, (y1+ylength)}
+                ModifyGraph noLabel($yMirrorName)=2
+                ModifyGraph tick($yMirrorName) = 0, btlen($yMirrorName) = 4
+               
+                xMirrorName = "xMirror" + num2str(n)
+                NewFreeAxis/B $xMirrorName
+                ModifyFreeAxis $xMirrorName master = $xAxisName
+                ModifyGraph freePos($xMirrorName) ={(x0+yLength), kwFraction}
+                ModifyGraph axisEnab($xMirrorName) ={x1, (x1+xlength)}
+                ModifyGraph noLabel($xMirrorName)=2
+                ModifyGraph tick($xMirrorName) = 0, btlen($xMirrorName) = 4
+            endif
+           
+            // shift next starting positions to the right
+            y0 += xLength + spacing
+            x1 += xlength + spacing
+           
+            // increase plot counter
+            n += 1             
+        endfor  
+       
+        // shift next starting positions up
+        x0 += yLength + spacing
+        y1 += yLength + spacing
+    endfor
+   
+    return 1
+end
+
+
+
+// run charge transition by doing the following:
+
+//chargetransition_procedure2(3914, 1);
+//MultiGraphLayout(WinList("*", ";", "WIN:1"), 3, 20, "AllGraphLayout");
