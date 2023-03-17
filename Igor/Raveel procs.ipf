@@ -482,6 +482,8 @@ function chargetransition_procedure(int wavenum, int condition)
 end
 
 
+/////////////////// NOTES /////////////////////////////////////////////////////////////////////////////
+
 
 // bounds for fit parameters
 // setting amplitude by differentiation seems to not work
@@ -497,7 +499,7 @@ end
 
 // 		    //DONE// all plots in one window
 
-// 		    //DONE//fix x - scaling
+// 		    //DONE//fix x - scaling - suprisingly time consuming.
 
 // 		deal with some interlacing (dividing current set into subsets of sweeps)
 						//(would likely just need another function)
@@ -509,3 +511,22 @@ end
 
 // 		centering option (yes/no)
 
+
+// other:
+//       centered data is being halfed after x-scaling fix - need to check whats going on
+//       multi-graph layout axis need to be adjusted
+
+
+// waves created example: dat3320quickavg, dat3320fit_params, dat3320centavg
+
+
+
+
+// run charge transition by doing the following:
+
+//chargetransition_procedure2(3914, 1);
+//MultiGraphLayout(WinList("*", ";", "WIN:1"), 3, 20, "AllGraphLayout");
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////

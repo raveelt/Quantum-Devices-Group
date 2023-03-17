@@ -535,6 +535,58 @@ function chargetransition_procedure2(int wavenum, int condition)
 
 end
 
+
+
+function periodic_seperation(string interlaced, int period)
+	//interlaced = wavename
+	
+	int i
+	
+	
+	duplicate /o $interlaced interlaced_c
+	
+	if (dimsize(interlaced_c,1)<151)
+		matrixtranspose interlaced_c
+	endif
+	
+	
+	
+	int nr = dimsize(interlaced_c,0) //number of rows (total sweeps)
+	int nc = dimsize(interlaced_c,1) //number of columns (data points)
+	
+	
+	// makes waves based on the period //
+	// make list of all new string names? // create this as an option to include its own names?
+	// loop through a name, point to that wave, assign the corresponding row
+	
+	
+	for (i=1; i <= period ; i+=1)
+	
+		string wave_name = interlaced + "current" + num2str(i)
+		make /n=(nr/period, nc) /o $wave_name
+		
+	endfor
+	
+	
+	for (i=1; i <= nr/period ; i+=1)
+			
+			
+		//$wave_name[1 * i][] = interlaced_c[q][]
+		
+	endfor
+
+end
+
+
+
+
+
+
+
+
+
+
+
 //function chargetransition_procedure2m(int wavenum, int condition)
 //
 //	chargetransition_procedure2(wavenum, condition)
@@ -554,13 +606,6 @@ Function QuickColorSpectrum2()                            // colors traces with 
         ModifyGraph rgb($StringFromList(i,Traces))=(colors[0][i],colors[1][i],colors[2][i])      // set new color offset
     endfor
 End
-
-
-
-
-// The avg current x-scale might be wrong so its causing that nonsense to happen (maybe in the fit?)
-
-
 
 
 
@@ -761,8 +806,3 @@ function MakeStackedGraph(yWaveList, xWaveList, nCols, spacing, GraphName, mirro
 end
 
 
-
-// run charge transition by doing the following:
-
-//chargetransition_procedure2(3914, 1);
-//MultiGraphLayout(WinList("*", ";", "WIN:1"), 3, 20, "AllGraphLayout");
