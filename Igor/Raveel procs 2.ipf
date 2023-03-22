@@ -539,55 +539,6 @@ end
 
 
 
-function periodic_seperation(string interlaced, int period)
-	//interlaced = wavename
-	
-	int i
-
-	duplicate /o $interlaced interlaced_c
-	
-	if (dimsize(interlaced_c,1)<151)    //this might not be great depending on the matrix size
-		matrixtranspose interlaced_c    //ask tim/johann for an example dat to test it out?
-	endif
-	
-	
-	
-	int nr = dimsize(interlaced_c,0) //number of rows (total sweeps)
-	int nc = dimsize(interlaced_c,1) //number of columns (data points)
-	
-	
-	// makes waves based on the period //
-	// make list of all new string names? // create this as an option to include its own names?
-	// loop through a name, point to that wave, assign the corresponding row
-	
-	
-	make /o /n =(period) wave_names   //wavename list
-	
-	for (i=1; i <= period ; i+=1)
-	
-		string wave_name = interlaced + "period" + num2str(i)
-		make /n=(nr/period, nc) /o $wave_name
-		
-	endfor
-	
-	
-	
-	
-	for (i=1; i <= nr/period ; i+=1)
-			
-			
-		//$wave_name[1 * i][] = interlaced_c[q][]
-		
-	endfor
-
-end
-
-
-
-
-
-
-
 
 
 
@@ -809,5 +760,80 @@ function MakeStackedGraph(yWaveList, xWaveList, nCols, spacing, GraphName, mirro
    
     return 1
 end
+
+
+
+
+
+
+
+/////// Dealing Interlacing ////////
+
+
+
+// improvements on this function
+//			let it take an argument of names for all the waves created
+
+
+//     		an option or a new function all together that seperates the waves by grouping
+//									i.e grouping x number of rows in a m by n matrix creating 
+//                                      a total of m/x waves, also takes an argument for naming?
+//          it could group based on amount of splits e.g split 2D wave into 4
+//          it could group based on number of rows indicated. 
+
+
+function periodic_seperation(string interlaced, int period)
+	//interlaced = wavename
+	
+	int i
+	int j
+
+	duplicate /o $interlaced interlaced_c
+	
+	if (dimsize(interlaced_c,1)<151)    //this might not be great depending on the matrix size
+		matrixtranspose interlaced_c    //ask tim/johann for an example dat to test it out?
+	endif
+	
+	
+	
+	int nr = dimsize(interlaced_c,1) //number of rows (total sweeps)
+	int nc = dimsize(interlaced_c,0) //number of columns (data points)
+	
+	
+	// makes waves based on the period //
+	// make list of all new string names? // create this as an option to include its own names?
+	// loop through a name, point to that wave, assign the corresponding row
+	
+	
+	make /t /o /n = (period) wave_names   //wavename list (text wave)
+	
+	for (i=0; i < period ; i+=1)
+	
+		string wave_name = interlaced + "period" + num2str(i)
+		wave_names[i] = wave_name
+		make /n=(nr/period, nc) /o $wave_name
+		
+	endfor
+	
+	
+	
+	
+	for (i=0; i < nr/period ; i+=1)	
+		for (j=0; j < period ; j+=1)
+		
+			wave tempwave = $(wave_names[j]) 
+			tempwave[1*i] = interlaced_c[q][(period * i + j)]
+		
+		endfor
+	endfor
+
+end
+
+
+
+
+
+////$somewave + "_somestring" // this is wrong
+////$(somewave + "_somestring") // this is correct
 
 
