@@ -2,6 +2,8 @@
 #pragma rtGlobals=3				// Use modern global access method and strict wave access
 #pragma DefaultTab={3,20,4}		// Set default tab width in Igor Pro 9 and later
 
+#include <Reduce Matrix Size>
+
 
 function /wave quick_avg2(int wavenum, string dataset, int view) // /WAVE lets your return a wave
 
@@ -221,8 +223,8 @@ function /wave get_fit_params2(int wavenum, string dataset, int condition)
 	  
       fit_transition2(temp_wave, condition)
       fit_params[1 * i][,4] = W_coef[q]
-      fit_params[1 * i][5,] = W_sigma[q-5]         //I genuinely cant believe this worked
-		
+      fit_params[1 * i][5,] = W_sigma[q-5]         //I genuinely cant believe this worked 
+		    											// i dont think the q-5 does anything, should double check
 	endfor
 	
 	return fit_params
@@ -541,12 +543,11 @@ function periodic_seperation(string interlaced, int period)
 	//interlaced = wavename
 	
 	int i
-	
-	
+
 	duplicate /o $interlaced interlaced_c
 	
-	if (dimsize(interlaced_c,1)<151)
-		matrixtranspose interlaced_c
+	if (dimsize(interlaced_c,1)<151)    //this might not be great depending on the matrix size
+		matrixtranspose interlaced_c    //ask tim/johann for an example dat to test it out?
 	endif
 	
 	
@@ -560,12 +561,16 @@ function periodic_seperation(string interlaced, int period)
 	// loop through a name, point to that wave, assign the corresponding row
 	
 	
+	make /o /n =(period) wave_names   //wavename list
+	
 	for (i=1; i <= period ; i+=1)
 	
-		string wave_name = interlaced + "current" + num2str(i)
+		string wave_name = interlaced + "period" + num2str(i)
 		make /n=(nr/period, nc) /o $wave_name
 		
 	endfor
+	
+	
 	
 	
 	for (i=1; i <= nr/period ; i+=1)

@@ -527,6 +527,8 @@ end
 //chargetransition_procedure2(3914, 1);
 //MultiGraphLayout(WinList("*", ";", "WIN:1"), 3, 20, "AllGraphLayout");
 
+//reduce matrix size? igor procedure file?
+	//
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
