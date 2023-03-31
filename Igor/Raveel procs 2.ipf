@@ -247,9 +247,6 @@ function plot_thetas2(int wavenum, string dataset, int condition)
 	get_fit_params2(wavenum, dataset, condition)
 	wave fit_params = $fit_params_name
 	nr = dimsize(fit_params,0)
-	nr = nr/2-1               //only the first half are associated with theta values,
-	                          //the second have are the uncertainties 
-	 
 	
 	duplicate /O/R =[0,nr][2] fit_params thetas
 	
@@ -784,6 +781,7 @@ end
 
 function periodic_seperation(string interlaced, int period)
 	//interlaced = wavename
+	// output = "interlaced" + "period" + "0"
 	
 	int i
 	int j
@@ -814,8 +812,6 @@ function periodic_seperation(string interlaced, int period)
 		make /n=(nr/period, nc) /o $wave_name
 		
 	endfor
-	
-	
 	
 	
 	for (i=0; i < nr/period ; i+=1)	
