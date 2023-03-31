@@ -511,10 +511,9 @@ end
 
 // 		centering option (yes/no)
 
-
 // other:
-//       centered data is being halfed after x-scaling fix - need to check whats going on
-//       multi-graph layout axis need to be adjusted
+//       multi-graph layout axis need to be adjusted ?
+
 
 
 // waves created example: dat3320quickavg, dat3320fit_params, dat3320centavg
@@ -536,5 +535,5 @@ end
 
 
 
-//// look for where the centred fits are being divided.
+//// the centering relies on cutting off by some percent of the total data - this number could be changed, 
 //// 

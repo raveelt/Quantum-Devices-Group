@@ -370,7 +370,10 @@ function centering2(int wavenum, string dataset, int condition)
 	int nr
 	int nc
 	int nnr
+	int cutoff //percent to deal with edge cases
 	
+	
+	cutoff = 6 // the edge cases are just cut off by some percent
 	
 	wave fit_params = $fit_params_name
 	w2d= "dat"+num2str(wavenum)+dataset //current 2d array
@@ -399,7 +402,7 @@ function centering2(int wavenum, string dataset, int condition)
 	centered_2dx = 0
 	
 	duplicate /o/r = [0,nr][3] fit_params mids
-	duplicate /o/r =[nc/10, nc - nc/10] wavex new_x
+	duplicate /o/r =[nc * cutoff/100, nc - nc * cutoff/100] wavex new_x  
 	
 	
 	make /o/n = (nnr, (dimsize(new_x,0))) new2dwave
