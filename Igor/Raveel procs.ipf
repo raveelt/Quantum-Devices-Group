@@ -536,4 +536,4 @@ end
 
 
 //// the centering relies on cutting off by some percent of the total data - this number could be changed, 
-//// 
+////reduce matrix size included at the header of a procedure file (found in igor procedure file), need to figure out how it works.

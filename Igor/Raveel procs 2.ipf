@@ -432,7 +432,8 @@ function centering2(int wavenum, string dataset, int condition)
 	display; //start with empty graph
 	
 	matrixtranspose new2dwave
-	copyscales wavex new2dwave
+	//copyscales wavex new2dwave //this is wrong
+	setscale/I x new_x[0] , new_x[dimsize(new_x,0) - 1], "", new2dwave
 	
 	appendimage new2dwave //append image of data
 	ModifyImage new2dwave ctab= {*,*,Turbo,0} //setting color (idk why it prefers the pointer)
